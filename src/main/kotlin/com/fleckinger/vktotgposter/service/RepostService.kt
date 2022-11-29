@@ -1,0 +1,112 @@
+package com.fleckinger.vktotgposter.service
+
+import com.fleckinger.vktotgposter.dto.Photo
+import com.fleckinger.vktotgposter.dto.Post
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Service
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo
+
+@Service
+class RepostService(val vkService: VkService, val telegramService: TelegramService) {
+    private val log: Logger = LoggerFactory.getLogger(RepostService::class.java)
+
+    @Scheduled(fixedDelayString = "\${application.sleep.time}")
+    fun repostFromVkToTelegram() {
+        log.info("Reposting start")
+        val posts = vkService.getPosts().items
+        if (posts != null) {
+            for (post in posts) {
+                val text = post.text
+                val attachmentsSize = post.attachments.size
+                if (attachmentsSize == 1 && post.attachments.first().type == "photo") {
+                    val photo = formInputMediaPhoto(post)
+                    telegramService.sendPhotoToChannel(photo)
+                    log.info("Photo with text: $text")
+                } else if (attachmentsSize == 1 && post.attachments.first().type == "video") {
+                    val video = formInputMediaVideo(post)
+                    telegramService.sendVideoToChannel(video)
+                    log.info("Video with text: $text")
+                } else {
+                    val media = formInputMediaGroup(post)
+                    telegramService.sendMediaGroupToChannel(media)
+                    log.info("Post with text: $text. Number of attachments: ${media.size}")
+                }
+            }
+            log.info("Reposting finish")
+        }
+    }
+        //TODO consider about relocate this method to Utils class
+    fun formInputMediaGroup(post: Post): List<InputMedia> {
+        val inputMedia = mutableListOf<InputMedia>()
+        val attachments = post.attachments
+        //TODO refactor this section, because in current state this code might put different type of media in one list,
+        // that just restricted by telegram
+        if (attachments.isNotEmpty()) {
+            attachments.forEachIndexed { index, attachment ->
+                if (attachment.type.equals("photo", ignoreCase = true) && attachment.photo != null) {
+                    val photo = findLargestImageUrl(attachment.photo)
+                    val media = if (index == 0) {
+                        InputMediaPhoto.builder().media(photo).caption(post.text).build()
+                    } else {
+                        InputMediaPhoto(photo)
+                    }
+                    inputMedia.add(media)
+                } else if (attachment.type.equals("video", ignoreCase = true) && attachment.video != null) {
+                    val video = attachment.video.player
+                    val media = if (index == 0) {
+                        InputMediaVideo.builder().media(video).caption(post.text).build()
+                    } else {
+                        InputMediaVideo(video)
+                    }
+                    inputMedia.add(media)
+                }
+            }
+        }
+        return inputMedia
+    }
+
+    fun formInputMediaPhoto(post: Post): InputMediaPhoto {
+        if (post.attachments.isNotEmpty() && post.attachments.first().type == "photo") {
+            val photo = post.attachments.first().photo
+            val url = findLargestImageUrl(photo!!)
+            val text = post.text
+
+            return InputMediaPhoto.builder().media(url).caption(text).build()
+        } else {
+            throw IllegalArgumentException("This method allow only post with one photo")
+        }
+    }
+
+    fun formInputMediaVideo(post: Post): InputMediaVideo {
+        if (post.attachments.isNotEmpty() && post.attachments.first().type == "photo") {
+            val photo = post.attachments.first().photo
+            val url = findLargestImageUrl(photo!!)
+            val text = post.text
+
+            return InputMediaVideo.builder().media(url).caption(text).build()
+        } else {
+            throw IllegalArgumentException("This method allow only post with one video")
+        }
+    }
+
+    private fun findLargestImageUrl(photo: Photo): String {
+        if (photo.sizes.isEmpty()) {
+            return ""
+        }
+        var largestImageLink = photo.sizes[0].url
+
+        var largestResolution = 0
+        for (size in photo.sizes) {
+            val resolution = size.height + size.width
+            if (resolution <= 10_000 && resolution > largestResolution) {
+                largestResolution = resolution
+                largestImageLink = size.url
+            }
+        }
+        return largestImageLink
+    }
+}
