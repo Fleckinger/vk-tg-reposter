@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto
+import org.telegram.telegrambots.meta.api.methods.send.SendVideo
 import org.telegram.telegrambots.meta.api.objects.InputFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.media.InputMedia
@@ -78,7 +79,7 @@ class TelegramService : TelegramLongPollingBot() {
 
     fun sendVideoToChannel(videoMedia: InputMedia) {
         val message =
-            SendPhoto.builder().chatId(channelId).caption(videoMedia.caption).photo(InputFile(videoMedia.media)).build()
+            SendVideo.builder().chatId(channelId).caption(videoMedia.caption).video(InputFile(videoMedia.media)).build()
         try {
             execute(message)
         } catch (apiException: TelegramApiException) {
