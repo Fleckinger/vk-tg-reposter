@@ -53,8 +53,8 @@ data class Video(
     val title: String,
     val description: String,
     val accessKey: String,
-    val player: String,
-    val platform: String
+    val player: String = "",
+    val platform: String = ""
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

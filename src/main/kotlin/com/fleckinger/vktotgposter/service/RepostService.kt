@@ -30,8 +30,9 @@ class RepostService(val vkService: VkService, val telegramService: TelegramServi
                         telegramService.sendPhotoToChannel(photo)
                         log.info("Photo with text: $text")
                     } else if (attachmentsSize == 1 && post.attachments.first().type == "video") {
-                        val video = formInputMediaVideo(post)
-                        telegramService.sendVideoToChannel(video)
+                        //TODO Implement sending video using multipart/form-data and if video from Youtube - using URL
+                        /*val video = formInputMediaVideo(post)
+                        telegramService.sendVideoToChannel(video)*/
                         log.info("Video with text: $text")
                     } else {
                         val media = formInputMediaGroup(post)
