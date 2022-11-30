@@ -2,6 +2,8 @@ package com.fleckinger.vktotgposter.service
 
 import com.fleckinger.vktotgposter.dto.Photo
 import com.fleckinger.vktotgposter.dto.Post
+import com.fleckinger.vktotgposter.model.PostId
+import com.fleckinger.vktotgposter.respository.PostRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -11,7 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo
 
 @Service
-class RepostService(val vkService: VkService, val telegramService: TelegramService) {
+class RepostService(val vkService: VkService, val telegramService: TelegramService, val postRepository: PostRepository) {
     private val log: Logger = LoggerFactory.getLogger(RepostService::class.java)
 
     @Scheduled(fixedDelayString = "\${application.sleep.time}")
@@ -22,18 +24,24 @@ class RepostService(val vkService: VkService, val telegramService: TelegramServi
             for (post in posts) {
                 val text = post.text
                 val attachmentsSize = post.attachments.size
-                if (attachmentsSize == 1 && post.attachments.first().type == "photo") {
-                    val photo = formInputMediaPhoto(post)
-                    telegramService.sendPhotoToChannel(photo)
-                    log.info("Photo with text: $text")
-                } else if (attachmentsSize == 1 && post.attachments.first().type == "video") {
-                    val video = formInputMediaVideo(post)
-                    telegramService.sendVideoToChannel(video)
-                    log.info("Video with text: $text")
+                if (!postRepository.existsById(post.id)) {
+                    if (attachmentsSize == 1 && post.attachments.first().type == "photo") {
+                        val photo = formInputMediaPhoto(post)
+                        telegramService.sendPhotoToChannel(photo)
+                        log.info("Photo with text: $text")
+                    } else if (attachmentsSize == 1 && post.attachments.first().type == "video") {
+                        val video = formInputMediaVideo(post)
+                        telegramService.sendVideoToChannel(video)
+                        log.info("Video with text: $text")
+                    } else {
+                        val media = formInputMediaGroup(post)
+                        telegramService.sendMediaGroupToChannel(media)
+                        log.info("Post with text: $text. Number of attachments: ${media.size}")
+                    }
+                    postRepository.save(PostId(post.id))
+                    log.info("Post with id: ${post.id} saved to database")
                 } else {
-                    val media = formInputMediaGroup(post)
-                    telegramService.sendMediaGroupToChannel(media)
-                    log.info("Post with text: $text. Number of attachments: ${media.size}")
+                    log.info("Post with id: ${post.id} was already posted")
                 }
             }
             log.info("Reposting finish")

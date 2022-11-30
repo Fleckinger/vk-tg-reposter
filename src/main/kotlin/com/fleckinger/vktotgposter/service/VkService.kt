@@ -10,7 +10,6 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
-import java.lang.Exception
 import java.net.URI
 
 @Service
@@ -40,13 +39,17 @@ class VkService {
         val headers = Utils.bearerAuthHeaders(vkOAuthToken)
         val entity = HttpEntity<Response>(headers)
         val posts = restTemplate.exchange(uri, HttpMethod.GET, entity, VkResponse::class.java)
-        //TODO а нужен ли тут лимит реквестов? Все равно в апи можно стучаться пару раз в секунду, а у меня раз в 10 сек
+        //TODO Do I need a request limit? Anyway, I can knock on the api a couple of times per second, but I have it once every 10 seconds
         var requestsLimit = 5
         while (requestsLimit != 0) {
             if (posts.statusCode == HttpStatus.OK) {
                 return posts.body!!.response
             } else {
-                log.error("Request failed with status code: ${posts.statusCode}")
+                log.error(
+                    """Request failed with status code: ${posts.statusCode}
+                    |body: ${posts.body}
+                """.trimMargin()
+                )
                 log.info("Wait 10 sec before new request")
                 Thread.sleep(10_000)
                 requestsLimit--

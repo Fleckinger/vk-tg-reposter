@@ -18,7 +18,7 @@ data class Response(
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class Post(
-    val id: Int,
+    val id: Long,
     val ownerId: Int,
     val fromId: Int,
     val createdBy: Int,
