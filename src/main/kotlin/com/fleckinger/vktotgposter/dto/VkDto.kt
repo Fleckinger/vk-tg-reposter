@@ -32,7 +32,6 @@ data class Attachment(
     val type: String,
     val photo: Photo?,
     val video: Video?,
-    val link: Link?
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -55,11 +54,4 @@ data class Video(
     val accessKey: String,
     val player: String = "",
     val platform: String = ""
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class Link(
-    val url: String,
-    val description: String,
-    val photo: Photo
 )
