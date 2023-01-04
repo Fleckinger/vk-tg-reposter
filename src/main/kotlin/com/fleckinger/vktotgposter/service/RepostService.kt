@@ -131,8 +131,6 @@ class RepostService(
     private fun filterString(text: String, invalidWords: List<String>): String {
         var result = text
         for (word in invalidWords) {
-            println(result.contains(word))
-            println(result.replace(word, ""))
             result = result.replace(word, "")
         }
         return result
