@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./src/main/storage/postDataDB
+  jpa:
+    hibernate:
+      ddl-auto: update
+vk:
+  group:
+    #For example https://vk.com/public140852369 -> "140852369" is group id
+    id: ''
+    domain: ''
+    #The number of posts that will be return from vk. Default value - 1. Max value - 100.
+    count: '5'
+  token:
+  apiVersion: '5.131'
+telegram:
+  channel:
+    #List of worlds or phrases to remove from post, separated by comma
+    wordBlacklist:
+    # How to obtain channel id - https://github.com/GabrielRF/telegram-id or just use this bot https://t.me/username_to_id_bot
+    id:
+  bot:
+    token:
+application:
+  sleep:
+    # Sleep time in milliseconds between repost attempts, default value - 1 minute
+    time: '6000'

@@ -23,7 +23,7 @@ data class Post(
     val fromId: Int,
     val createdBy: Int,
     val date: Int,
-    val text: String,
+    var text: String,
     val attachments: List<Attachment>
 )
 

@@ -6,6 +6,7 @@ import com.fleckinger.vktotgposter.model.PostId
 import com.fleckinger.vktotgposter.respository.PostRepository
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.telegram.telegrambots.meta.api.objects.media.InputMedia
@@ -13,8 +14,14 @@ import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo
 
 @Service
-class RepostService(val vkService: VkService, val telegramService: TelegramService, val postRepository: PostRepository) {
+class RepostService(
+    val vkService: VkService,
+    val telegramService: TelegramService,
+    val postRepository: PostRepository
+) {
     private val log: Logger = LoggerFactory.getLogger(RepostService::class.java)
+    @Value("\${telegram.channel.wordBlacklist}")
+    lateinit var invalidWords: List<String>
 
     @Scheduled(fixedDelayString = "\${application.sleep.time}")
     fun repostFromVkToTelegram() {
@@ -22,6 +29,7 @@ class RepostService(val vkService: VkService, val telegramService: TelegramServi
         val posts = vkService.getPosts().items
         if (posts != null) {
             for (post in posts) {
+                post.text = filterString(post.text, invalidWords)
                 val text = post.text
                 val attachmentsSize = post.attachments.size
                 if (!postRepository.existsById(post.id)) {
@@ -48,7 +56,8 @@ class RepostService(val vkService: VkService, val telegramService: TelegramServi
             log.info("Reposting finish")
         }
     }
-        //TODO consider about relocate this method to Utils class
+
+    //TODO consider about relocate this method to Utils class
     fun formInputMediaGroup(post: Post): List<InputMedia> {
         val inputMedia = mutableListOf<InputMedia>()
         val attachments = post.attachments
@@ -117,5 +126,15 @@ class RepostService(val vkService: VkService, val telegramService: TelegramServi
             }
         }
         return largestImageLink
+    }
+
+    private fun filterString(text: String, invalidWords: List<String>): String {
+        var result = text
+        for (word in invalidWords) {
+            println(result.contains(word))
+            println(result.replace(word, ""))
+            result = result.replace(word, "")
+        }
+        return result
     }
 }
