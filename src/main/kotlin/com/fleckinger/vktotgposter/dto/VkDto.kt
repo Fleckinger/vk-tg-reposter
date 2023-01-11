@@ -11,7 +11,7 @@ data class VkResponse(
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class Response(
     val count: Int?,
-    val items: List<Post>?,
+    var items: List<Post>?,
     val nextFrom: String?
 )
 
@@ -24,7 +24,7 @@ data class Post(
     val createdBy: Int,
     val date: Int,
     var text: String,
-    val attachments: List<Attachment>
+    var attachments: List<Attachment>
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -1,5 +1,6 @@
 package com.fleckinger.vktotgposter.service
 
+import com.fleckinger.vktotgposter.dto.Post
 import com.fleckinger.vktotgposter.dto.Response
 import com.fleckinger.vktotgposter.dto.VkResponse
 import org.slf4j.Logger
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.net.URI
+import java.util.stream.Collectors
 
 @Service
 class VkService {
@@ -43,6 +45,7 @@ class VkService {
         var requestsLimit = 5
         while (requestsLimit != 0) {
             if (posts.statusCode == HttpStatus.OK) {
+                posts.body!!.response.items = posts.body!!.response.items?.let { removeLinks(it) }
                 return posts.body!!.response
             } else {
                 log.error(
@@ -56,5 +59,14 @@ class VkService {
             }
         }
         throw Exception("Vk server does not respond")
+    }
+
+    private fun removeLinks(posts: List<Post>):List<Post> {
+       for (post in posts) {
+           post.attachments = post.attachments.stream()
+               .filter {it.type != "link"}
+               .collect(Collectors.toList())
+       }
+        return posts
     }
 }
