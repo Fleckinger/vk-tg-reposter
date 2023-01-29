@@ -45,52 +45,18 @@ class TelegramService : TelegramLongPollingBot() {
 
     fun sendMediaGroupToChannel(mediaGroup: List<InputMedia>) {
         val message = SendMediaGroup.builder().chatId(channelId).medias(mediaGroup).build()
-        try {
-            execute(message)
-        } catch (apiException: TelegramApiException) {
-            log.error(
-                """"
-                |Telegram API error. 
-                |Cause: ${apiException.cause}. 
-                |Message: ${apiException.message}
-                |${apiException.stackTrace}
-                |""".trimMargin()
-            )
-        }
+        execute(message)
     }
-        //TODO need refactoring too avoid code duplicate
+
     fun sendPhotoToChannel(photoMedia: InputMedia) {
         val message =
             SendPhoto.builder().chatId(channelId).caption(photoMedia.caption).photo(InputFile(photoMedia.media)).build()
-        try {
-            execute(message)
-        } catch (apiException: TelegramApiException) {
-            log.error(
-                """"
-                |Telegram API error. 
-                |Cause: ${apiException.cause}. 
-                |Message: ${apiException.message}
-                |${apiException.stackTrace}
-                |""".trimMargin()
-            )
-        }
-
+        execute(message)
     }
 
     fun sendVideoToChannel(videoMedia: InputMedia) {
         val message =
             SendVideo.builder().chatId(channelId).caption(videoMedia.caption).video(InputFile(videoMedia.media)).build()
-        try {
-            execute(message)
-        } catch (apiException: TelegramApiException) {
-            log.error(
-                """"
-                |Telegram API error. 
-                |Cause: ${apiException.cause}. 
-                |Message: ${apiException.message}
-                |${apiException.stackTrace}
-                |""".trimMargin()
-            )
-        }
+        execute(message)
     }
 }

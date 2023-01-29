@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service
 import org.telegram.telegrambots.meta.api.objects.media.InputMedia
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto
 import org.telegram.telegrambots.meta.api.objects.media.InputMediaVideo
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException
+import java.net.UnknownHostException
 
 @Service
 class RepostService(
@@ -20,40 +22,58 @@ class RepostService(
     val postRepository: PostRepository
 ) {
     private val log: Logger = LoggerFactory.getLogger(RepostService::class.java)
+
     @Value("\${telegram.channel.wordBlacklist}")
     lateinit var invalidWords: List<String>
 
     @Scheduled(fixedDelayString = "\${application.sleep.time}")
     fun repostFromVkToTelegram() {
         log.info("Reposting start")
-        val posts = vkService.getPosts().items
-        if (posts != null) {
-            for (post in posts) {
-                post.text = filterString(post.text, invalidWords)
-                val text = post.text
-                val attachmentsSize = post.attachments.size
-                if (!postRepository.existsById(post.id)) {
-                    if (post.attachments.first().type == "photo" && attachmentsSize == 1) {
-                        val photo = formInputMediaPhoto(post)
-                        telegramService.sendPhotoToChannel(photo)
-                        log.info("Photo with text: $text")
-                    } else if (post.attachments.first().type == "video" && attachmentsSize == 1) {
-                        //TODO Implement sending video using multipart/form-data and if video from Youtube - using URL
-                        /*val video = formInputMediaVideo(post)
-                        telegramService.sendVideoToChannel(video)*/
-                        log.info("Video with text: $text")
+        try {
+            val posts = vkService.getPosts().items
+            if (posts != null) {
+                for (post in posts) {
+                    post.text = filterString(post.text, invalidWords)
+
+                    val text = post.text
+                    val attachmentsSize = post.attachments.size
+
+                    if (!postRepository.existsById(post.id)) {
+                        try {
+                            if (post.attachments.first().type == "photo" && attachmentsSize == 1) {
+                                val photo = formInputMediaPhoto(post)
+                                telegramService.sendPhotoToChannel(photo)
+                                log.info("Photo with text: $text")
+                            } else if (post.attachments.first().type == "video" && attachmentsSize == 1) {
+                                //TODO Implement sending video using multipart/form-data and if video from Youtube - using URL
+                                /*val video = formInputMediaVideo(post)
+                            telegramService.sendVideoToChannel(video)*/
+                                log.info("Video with text: $text")
+                            } else {
+                                val media = formInputMediaGroup(post)
+                                telegramService.sendMediaGroupToChannel(media)
+                                log.info("Post with text: $text. Number of attachments: ${media.size}")
+                            }
+                            postRepository.save(PostId(post.id))
+                            log.info("Post with id: ${post.id} saved to database")
+                        } catch (apiException: TelegramApiException) {
+                            log.error(
+                                """"
+                            |Telegram API error. 
+                            |Cause: ${apiException.cause}. 
+                            |Message: ${apiException.message}
+                            |${apiException.stackTrace}
+                            |""".trimMargin()
+                            )
+                        }
                     } else {
-                        val media = formInputMediaGroup(post)
-                        telegramService.sendMediaGroupToChannel(media)
-                        log.info("Post with text: $text. Number of attachments: ${media.size}")
+                        log.info("Post with id: ${post.id} was already posted")
                     }
-                    postRepository.save(PostId(post.id))
-                    log.info("Post with id: ${post.id} saved to database")
-                } else {
-                    log.info("Post with id: ${post.id} was already posted")
                 }
+                log.info("Reposting finish")
             }
-            log.info("Reposting finish")
+        } catch (e: UnknownHostException) {
+            log.error("Host exception: ${e.cause}")
         }
     }
 
